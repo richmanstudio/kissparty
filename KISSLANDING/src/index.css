@@ -1,0 +1,82 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --primary-red: #FF0000;
+  --chrome-silver: #C0C0C0;
+  --chrome-dark: #1a1a1a;
+  --chrome-light: #E8E8E8;
+  --chrome-gradient-start: #2a2a2a;
+  --chrome-gradient-end: #0a0a0a;
+  --chrome-highlight: rgba(255, 255, 255, 0.1);
+  --chrome-shadow: rgba(0, 0, 0, 0.8);
+  --dark-bg: #0a0a0a;
+  --dark-panel: #1a1a1a;
+  --text-white: #ffffff;
+  --text-gray: #cccccc;
+  --chrome-reflect: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.3) 0%,
+    rgba(255, 255, 255, 0.1) 50%,
+    rgba(0, 0, 0, 0.2) 100%
+  );
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: var(--dark-bg);
+  color: var(--text-white);
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+  font-feature-settings: 'liga' 1, 'kern' 1;
+  text-rendering: optimizeLegibility;
+}
+
+#root {
+  min-height: 100vh;
+  background: 
+    radial-gradient(circle at 20% 50%, rgba(255, 0, 0, 0.05) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(255, 0, 0, 0.03) 0%, transparent 50%),
+    linear-gradient(180deg, #0a0a0a 0%, #050505 100%);
+  position: relative;
+}
+
+/* Chrome effect utility classes */
+.chrome-surface {
+  background: linear-gradient(135deg, 
+    rgba(255, 255, 255, 0.1) 0%,
+    rgba(255, 255, 255, 0.05) 25%,
+    rgba(0, 0, 0, 0.2) 50%,
+    rgba(255, 255, 255, 0.05) 75%,
+    rgba(255, 255, 255, 0.1) 100%
+  );
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
+}
+
+.chrome-text {
+  background: linear-gradient(135deg, 
+    #ffffff 0%,
+    #e0e0e0 25%,
+    #ffffff 50%,
+    #c0c0c0 75%,
+    #ffffff 100%
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: 0 2px 10px rgba(255, 255, 255, 0.3);
+  filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.2));
+}
+

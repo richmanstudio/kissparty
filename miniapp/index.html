@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#0a0a0a">
+    <title>Выбор мест - LOONA CLUB</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="stylesheet" href="css/style.css?v=3">
+</head>
+<body>
+    <div class="app-wrapper">
+        <!-- Заголовок -->
+        <header class="header">
+            <div class="header-content">
+                <div class="header-icon" id="header-icon"></div>
+                <div class="header-text">
+                    <h1>Выбор мест</h1>
+                    <div class="info">
+                        <span class="info-label">Выбрано:</span>
+                        <span class="info-value">
+                            <span id="selected-count" class="count">0</span>
+                            <span class="separator">/</span>
+                            <span id="total-count" class="count">0</span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progress-fill"></div>
+            </div>
+        </header>
+
+        <!-- Переключатель этажей -->
+        <div class="floor-selector">
+            <button class="floor-btn active" data-floor="1">
+                <span class="floor-icon" id="floor-icon-1"></span>
+                <span class="floor-text">1 этаж</span>
+            </button>
+            <button class="floor-btn" data-floor="2">
+                <span class="floor-icon" id="floor-icon-2"></span>
+                <span class="floor-text">2 этаж</span>
+            </button>
+        </div>
+
+        <!-- Легенда -->
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color free"></div>
+                <span>Свободно</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color selected"></div>
+                <span>Выбрано</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color occupied"></div>
+                <span>Занято</span>
+            </div>
+        </div>
+
+        <!-- Карта зала -->
+        <div class="map-container">
+            <div class="map-wrapper">
+                <div id="map-floor-1" class="map-floor active">
+                    <svg id="floor1-svg" viewBox="0 0 750 450" xmlns="http://www.w3.org/2000/svg">
+                        <!-- SVG будет генерироваться динамически -->
+                    </svg>
+                </div>
+                <div id="map-floor-2" class="map-floor">
+                    <svg id="floor2-svg" viewBox="0 0 800 1000" xmlns="http://www.w3.org/2000/svg">
+                        <!-- SVG будет генерироваться динамически -->
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- Список выбранных мест -->
+        <div class="selected-seats" id="selected-seats-panel">
+            <div class="selected-seats-header">
+                <div class="selected-seats-icon" id="selected-seats-icon"></div>
+                <h3>Выбранные места</h3>
+                <div class="selected-count-badge" id="selected-count-badge">0</div>
+            </div>
+            <div id="selected-list" class="selected-list"></div>
+            <div class="empty-state" id="empty-state">
+                <div class="empty-icon"></div>
+                <p>Места не выбраны</p>
+                <span>Нажмите на места на карте для выбора</span>
+            </div>
+        </div>
+
+        <!-- Кнопки действий -->
+        <div class="actions">
+            <button id="save-btn" class="btn btn-primary" disabled>
+                <span class="btn-icon" id="save-icon"></span>
+                <span class="btn-text">Сохранить выбор</span>
+            </button>
+            <button id="clear-btn" class="btn btn-secondary">
+                <span class="btn-icon" id="clear-icon"></span>
+                <span class="btn-text">Очистить</span>
+            </button>
+        </div>
+
+        <!-- Уведомления -->
+        <div class="toast" id="toast"></div>
+
+        <!-- Загрузка -->
+        <div id="loading" class="loading" style="display: none;">
+            <div class="loading-content">
+                <div class="spinner"></div>
+                <p>Загрузка...</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/icons.js"></script>
+    <script src="js/api.js?v=10"></script>
+    <script src="js/map-renderer.js?v=10"></script>
+    <script src="js/app.js?v=10"></script>
+    <style>
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+    </style>
+    <script>
+        // Принудительная проверка загрузки модулей
+        console.log('=== HTML LOADED ===');
+        console.log('Scripts should load now...');
+        window.addEventListener('load', function() {
+            console.log('=== PAGE FULLY LOADED ===');
+            console.log('All scripts should be loaded');
+        });
+    </script>
+</body>
+</html>
+

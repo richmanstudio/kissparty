@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>KISS EVENTS — Сканер билетов</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <style>
+        :root {
+            --black: #0a0a0a;
+            --black-soft: #111111;
+            --black-card: #161616;
+            --chrome: #c0c0c0;
+            --chrome-bright: #e8e8e8;
+            --chrome-dim: #6b6b6b;
+            --chrome-glow: rgba(192, 192, 192, 0.15);
+            --accent: #c0c0c0;
+            --success: #4ade80;
+            --warning: #fbbf24;
+            --danger: #f87171;
+            --border: #2a2a2a;
+            --radius: 12px;
+            --radius-lg: 20px;
+            --shadow: 0 4px 24px rgba(0,0,0,0.5);
+            --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Outfit', system-ui, -apple-system, sans-serif;
+            background: var(--black);
+            color: var(--chrome-bright);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* ========== SPLASH SCREEN ========== */
+        #splash {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(180deg, var(--black) 0%, var(--black-soft) 100%);
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+        #splash.hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+        .splash-logo {
+            font-size: clamp(2rem, 8vw, 3.5rem);
+            font-weight: 700;
+            letter-spacing: 0.3em;
+            background: linear-gradient(135deg, var(--chrome-bright) 0%, var(--chrome) 50%, var(--chrome-dim) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 0 40px var(--chrome-glow);
+            margin-bottom: 1rem;
+        }
+        .splash-sub {
+            font-size: 0.75rem;
+            font-weight: 500;
+            letter-spacing: 0.4em;
+            text-transform: uppercase;
+            color: var(--chrome-dim);
+        }
+        .splash-loader {
+            width: 48px;
+            height: 3px;
+            background: var(--border);
+            border-radius: 2px;
+            margin-top: 2.5rem;
+            overflow: hidden;
+        }
+        .splash-loader::after {
+            content: '';
+            display: block;
+            width: 40%;
+            height: 100%;
+            background: linear-gradient(90deg, var(--chrome), var(--chrome-bright));
+            border-radius: 2px;
+            animation: splashLoad 1.2s ease-in-out infinite;
+        }
+        @keyframes splashLoad {
+            0%, 100% { transform: translateX(0); }
+            50% { transform: translateX(140%); }
+        }
+
+        /* ========== MAIN LAYOUT ========== */
+        .app {
+            min-height: 100vh;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .card {
+            width: min(520px, 100%);
+            background: var(--black-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 1.75rem;
+            box-shadow: var(--shadow);
+        }
+        .card-header {
+            text-align: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+        .card-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--chrome-bright);
+            margin-bottom: 0.25rem;
+        }
+        .card-desc {
+            font-size: 0.8rem;
+            color: var(--chrome-dim);
+            line-height: 1.5;
+        }
+
+        /* Controls */
+        .controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+        .controls input { grid-column: 1 / -1; }
+        input[type="text"] {
+            width: 100%;
+            padding: 0.875rem 1rem;
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            background: var(--black);
+            color: var(--chrome-bright);
+            font-family: inherit;
+            font-size: 0.9rem;
+            transition: var(--transition);
+        }
+        input[type="text"]:focus {
+            outline: none;
+            border-color: var(--chrome-dim);
+            box-shadow: 0 0 0 2px var(--chrome-glow);
+        }
+        input::placeholder { color: var(--chrome-dim); opacity: 0.7; }
+        .btn {
+            padding: 0.875rem 1.25rem;
+            border-radius: var(--radius);
+            border: none;
+            font-family: inherit;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none !important; }
+        .btn-primary {
+            background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%);
+            color: var(--chrome-bright);
+            border: 1px solid var(--chrome-dim);
+        }
+        .btn-primary:hover:not(:disabled) {
+            background: linear-gradient(135deg, #353535 0%, #252525 100%);
+            border-color: var(--chrome);
+            transform: translateY(-1px);
+        }
+        .btn-danger {
+            background: linear-gradient(135deg, #2a1a1a 0%, #1a0a0a 100%);
+            color: var(--danger);
+            border: 1px solid rgba(248, 113, 113, 0.3);
+        }
+        .btn-danger:hover:not(:disabled) {
+            background: linear-gradient(135deg, #351a1a 0%, #250a0a 100%);
+            transform: translateY(-1px);
+        }
+
+        /* Reader */
+        .reader-wrap {
+            position: relative;
+            width: 100%;
+            min-height: 320px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+            background: var(--black);
+        }
+        #reader {
+            width: 100%;
+            min-height: 320px;
+        }
+        #reader video {
+            filter: contrast(1.05) saturate(1.1);
+        }
+        .reader-placeholder {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            color: var(--chrome-dim);
+            font-size: 3rem;
+            pointer-events: none;
+            background: var(--black);
+        }
+        .reader-placeholder span { font-size: 0.85rem; margin-top: 0.5rem; }
+        .status {
+            margin-top: 0.75rem;
+            font-size: 0.8rem;
+            color: var(--chrome-dim);
+        }
+
+        /* Badges */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.6rem;
+            border-radius: 999px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+        .badge.success { background: rgba(74, 222, 128, 0.15); color: var(--success); }
+        .badge.warning { background: rgba(251, 191, 36, 0.15); color: var(--warning); }
+        .badge.danger { background: rgba(248, 113, 113, 0.15); color: var(--danger); }
+        .badge.chrome { background: var(--chrome-glow); color: var(--chrome); }
+
+        /* Modal */
+        .modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            z-index: 100;
+            visibility: hidden;
+            opacity: 0;
+            transition: var(--transition);
+        }
+        .modal.show { visibility: visible; opacity: 1; }
+        .modal-content {
+            width: min(480px, 100%);
+            max-height: 85vh;
+            overflow-y: auto;
+            background: var(--black-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 1.5rem;
+            position: relative;
+        }
+        .modal-close {
+            position: absolute;
+            right: 1rem;
+            top: 1rem;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: var(--chrome-dim);
+            font-size: 1.5rem;
+            transition: color 0.2s;
+        }
+        .modal-close:hover { color: var(--chrome-bright); }
+        .modal h3 { margin-bottom: 0.5rem; font-size: 1.1rem; }
+        .modal p { color: var(--chrome-dim); font-size: 0.9rem; margin-bottom: 0.75rem; }
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem 1rem;
+            margin-top: 1rem;
+        }
+        .info-item { font-size: 0.8rem; }
+        .info-item .label {
+            color: var(--chrome-dim);
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 0.15rem;
+        }
+        .info-item .value { color: var(--chrome-bright); font-weight: 500; }
+        .modal-footer {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border);
+            font-size: 0.7rem;
+            color: var(--chrome-dim);
+        }
+
+        @media (max-width: 500px) {
+            .controls { grid-template-columns: 1fr; }
+            .info-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Splash Screen -->
+    <div id="splash">
+        <div class="splash-logo">KISS EVENTS</div>
+        <div class="splash-sub">Сканер билетов</div>
+        <div class="splash-loader"></div>
+    </div>
+
+    <div class="app">
+        <div class="card">
+            <div class="card-header">
+                <h1 class="card-title">Сканер билетов</h1>
+                <p class="card-desc">Наведите камеру на QR-код билета. Данные проверяются в базе KISS EVENTS.</p>
+            </div>
+
+            <div class="controls">
+                <input id="token" type="text" placeholder="🔐 Секрет доступа" />
+                <button id="startBtn" class="btn btn-primary">▶ Старт</button>
+                <button id="stopBtn" class="btn btn-danger" disabled>⏹ Стоп</button>
+            </div>
+
+            <div class="reader-wrap">
+                <div id="reader"></div>
+                <div class="reader-placeholder" id="readerPlaceholder">
+                    📷
+                    <span>Нажмите «Старт» для запуска камеры</span>
+                </div>
+            </div>
+            <div id="status" class="status"></div>
+        </div>
+    </div>
+
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-close" id="closeModal">×</div>
+            <div id="modalBody"></div>
+        </div>
+    </div>
+
+    <script>
+        const tokenInput = document.getElementById('token');
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const statusEl = document.getElementById('status');
+        const modal = document.getElementById('modal');
+        const modalBody = document.getElementById('modalBody');
+        const closeModal = document.getElementById('closeModal');
+        const splash = document.getElementById('splash');
+        const readerPlaceholder = document.getElementById('readerPlaceholder');
+
+        let scanner = null;
+        let scanning = false;
+        let lastText = null;
+        let lastScanAt = 0;
+
+        // Splash screen
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                splash.classList.add('hidden');
+            }, 1500);
+        });
+
+        tokenInput.value = localStorage.getItem('qrScannerToken') || '';
+        tokenInput.addEventListener('change', () => {
+            localStorage.setItem('qrScannerToken', tokenInput.value.trim());
+        });
+
+        function getApiBase() {
+            if (!window.location?.origin?.startsWith('http')) return '';
+            const parts = window.location.pathname.split('/').filter(Boolean);
+            parts.pop();
+            const basePath = parts.length ? '/' + parts.join('/') : '';
+            return window.location.origin + basePath;
+        }
+
+        const apiBase = getApiBase();
+
+        function setStatus(text, type = 'info') {
+            const colors = { info: 'var(--chrome-dim)', success: 'var(--success)', warn: 'var(--warning)', error: 'var(--danger)' };
+            statusEl.textContent = text;
+            statusEl.style.color = colors[type] || colors.info;
+        }
+
+        function badge(status) {
+            const map = {
+                active: '<span class="badge success">Активен</span>',
+                used: '<span class="badge warning">Использован</span>',
+                cancelled: '<span class="badge danger">Отменён</span>'
+            };
+            return map[status] || '<span class="badge chrome">—</span>';
+        }
+
+        function openModal(html) {
+            modalBody.innerHTML = html;
+            modal.classList.add('show');
+        }
+
+        function closeModalFn() {
+            modal.classList.remove('show');
+        }
+
+        closeModal.onclick = closeModalFn;
+        modal.onclick = (e) => { if (e.target === modal) closeModalFn(); };
+
+        function renderTicketCard(data) {
+            if (!data.success) {
+                const errorMsg = {
+                    unauthorized: 'Неверный секрет доступа',
+                    empty_payload: 'Пустой QR-код',
+                    invalid_signature: 'Недействительная подпись билета',
+                    ticket_code_missing: 'Код билета не найден в QR',
+                    ticket_not_found: 'Билет не найден в базе',
+                    user_mismatch: 'Билет не принадлежит пользователю',
+                    invalid_response: 'Сервер вернул некорректный ответ'
+                }[data.error] || (data.error || 'Не удалось проверить билет');
+                openModal(`
+                    <h3>Ошибка</h3>
+                    <p style="color:var(--danger);">${errorMsg}</p>
+                `);
+                return;
+            }
+            const t = data.ticket || {};
+            const username = t.username ? '@' + t.username : '—';
+            const fullName = [t.first_name, t.last_name].filter(Boolean).join(' ') || '—';
+            const created = t.created_at ? new Date(t.created_at).toLocaleString('ru-RU') : '—';
+            const amount = typeof t.amount === 'number' ? t.amount.toFixed(0) + ' ₽' : '—';
+            const bonusUsed = typeof t.bonus_used === 'number' ? t.bonus_used.toFixed(0) : '0';
+            const bonusEarned = typeof t.bonus_earned === 'number' ? t.bonus_earned.toFixed(0) : '0';
+
+            openModal(`
+                <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
+                    <h3>Билет ${t.ticket_code || '—'}</h3>
+                    ${badge(t.status)}
+                </div>
+                <p>${data.message || ''}</p>
+                <div class="info-grid">
+                    <div class="info-item"><div class="label">Тип</div><div class="value">${t.ticket_type || '—'}</div></div>
+                    <div class="info-item"><div class="label">Было</div><div class="value">${t.previous_status || '—'}</div></div>
+                    <div class="info-item"><div class="label">Сумма</div><div class="value">${amount}</div></div>
+                    <div class="info-item"><div class="label">Заказ</div><div class="value">${t.order_id || '—'}</div></div>
+                    <div class="info-item"><div class="label">User ID</div><div class="value">${t.user_id || '—'}</div></div>
+                    <div class="info-item"><div class="label">Username</div><div class="value">${username}</div></div>
+                    <div class="info-item"><div class="label">Имя</div><div class="value">${fullName}</div></div>
+                    <div class="info-item"><div class="label">Промокод</div><div class="value">${t.promo_code || '—'}</div></div>
+                    <div class="info-item"><div class="label">Создан</div><div class="value">${created}</div></div>
+                    <div class="info-item"><div class="label">Бонусы / Начислено</div><div class="value">${bonusUsed} / ${bonusEarned}</div></div>
+                </div>
+                <div class="modal-footer">
+                    Проверено: ${data.checked_at ? new Date(data.checked_at).toLocaleString('ru-RU') : '—'} •
+                    Подпись: ${data.signature_valid ? '✓' : '—'} •
+                    ${data.marked_used ? 'Помечен как использованный' : ''}
+                </div>
+            `);
+        }
+
+        async function handleScan(decodedText) {
+            const now = Date.now();
+            if (decodedText === lastText && now - lastScanAt < 2500) return;
+            lastText = decodedText;
+            lastScanAt = now;
+
+            const token = tokenInput.value.trim();
+            if (!token) {
+                setStatus('Укажите секрет доступа', 'warn');
+                return;
+            }
+
+            setStatus('Проверяю билет в базе...', 'info');
+
+            try {
+                if (!apiBase) throw new Error('no_api_base');
+
+                const res = await fetch(`${apiBase}/api/qr/verify`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        payload: decodedText,
+                        token,
+                        mark_used: true
+                    })
+                });
+
+                let data = {};
+                try {
+                    data = await res.json();
+                } catch (_) {
+                    data = { success: false, error: 'invalid_response' };
+                }
+
+                if (!res.ok) {
+                    setStatus('Ошибка: ' + (data.error || res.status), 'error');
+                    renderTicketCard({ success: false, error: data.error || 'unknown' });
+                    return;
+                }
+
+                if (!data.success) {
+                    setStatus('Ошибка: ' + (data.error || 'не удалось проверить'), 'error');
+                    renderTicketCard(data);
+                    return;
+                }
+
+                setStatus('Готово: ' + (data.message || 'проверено'), data.ticket?.status === 'used' && data.marked_used ? 'success' : 'warn');
+                renderTicketCard(data);
+
+            } catch (e) {
+                console.error(e);
+                const msg = (e && e.message) || String(e);
+                if (msg === 'no_api_base') {
+                    setStatus('Откройте сканер через домен сайта', 'error');
+                    openModal(`<h3>Ошибка</h3><p style="color:var(--danger);">Откройте страницу через домен, например: https://cw998871.tw1.ru/KISSPARTYPAYMAIN/qr-scanner</p>`);
+                } else if (msg.includes('fetch') || msg.includes('Network')) {
+                    setStatus('Ошибка сети. Проверьте подключение.', 'error');
+                    openModal(`<h3>Ошибка</h3><p style="color:var(--danger);">Нет связи с сервером. Проверьте интернет и URL.</p>`);
+                } else {
+                    setStatus('Ошибка сервера', 'error');
+                    openModal(`<h3>Ошибка</h3><p style="color:var(--danger);">${msg}</p>`);
+                }
+            }
+        }
+
+        async function startScanner() {
+            if (scanning) return;
+            const token = tokenInput.value.trim();
+            if (!token) {
+                setStatus('Введите секрет доступа', 'warn');
+                return;
+            }
+            if (readerPlaceholder) readerPlaceholder.style.display = 'none';
+            scanner = new Html5Qrcode("reader");
+            try {
+                await scanner.start(
+                    { facingMode: "environment" },
+                    { fps: 10, qrbox: { width: 220, height: 220 } },
+                    handleScan,
+                    () => {}
+                );
+                scanning = true;
+                startBtn.disabled = true;
+                stopBtn.disabled = false;
+                setStatus('Сканирование запущено. Наведите камеру на QR.', 'success');
+            } catch (e) {
+                if (readerPlaceholder) readerPlaceholder.style.display = 'flex';
+                setStatus('Камера: ' + (e.message || e), 'error');
+            }
+        }
+
+        async function stopScanner() {
+            if (!scanning || !scanner) return;
+            try {
+                await scanner.stop();
+                await scanner.clear();
+            } catch (e) { console.error(e); }
+            scanning = false;
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
+            if (readerPlaceholder) readerPlaceholder.style.display = 'flex';
+            setStatus('Сканирование остановлено.', 'info');
+        }
+
+        startBtn.onclick = startScanner;
+        stopBtn.onclick = stopScanner;
+        window.addEventListener('beforeunload', stopScanner);
+    </script>
+</body>
+</html>

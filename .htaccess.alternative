@@ -1,0 +1,15 @@
+# Альтернативный вариант .htaccess (если основной не работает)
+# Переименуйте этот файл в .htaccess если нужно
+
+Options +ExecCGI
+AddHandler wsgi-script .wsgi
+
+RewriteEngine On
+
+# Если файл существует, отдать его напрямую
+RewriteCond %{REQUEST_FILENAME} !-f
+# Если директория существует, отдать её напрямую  
+RewriteCond %{REQUEST_FILENAME} !-d
+# Все остальные запросы перенаправить на index.wsgi (без RewriteBase)
+RewriteRule ^(.*)$ /KISSPARTYPAYMAIN/index.wsgi/$1 [QSA,PT,L]
+

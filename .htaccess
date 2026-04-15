@@ -1,0 +1,16 @@
+Options +ExecCGI
+AddHandler wsgi-script .wsgi
+
+RewriteEngine On
+RewriteBase /KISSPARTYPAYMAIN/
+
+# Если запрашивается index.wsgi напрямую - пропустить
+RewriteRule ^index\.wsgi$ - [L]
+
+# Если файл существует, отдать его напрямую
+RewriteCond %{REQUEST_FILENAME} !-f
+# Если директория существует, отдать её напрямую
+RewriteCond %{REQUEST_FILENAME} !-d
+# Все остальные запросы перенаправить на index.wsgi
+RewriteRule ^(.*)$ index.wsgi/$1 [QSA,PT,L]
+
